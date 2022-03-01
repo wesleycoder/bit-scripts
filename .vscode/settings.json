@@ -1,4 +1,29 @@
 {
   "bitburner.fileWatcher.enable": true,
-  "bitburner.authToken": "9dxqQzZe15qMsz+REq46X5UFaR3MB+sMcaN6OPXDaHogp2bKfUVlL5ZNx7VJMfkx"
+  "bitburner.scriptRoot": "./scripts",
+  "bitburner.authToken": "9dxqQzZe15qMsz+REq46X5UFaR3MB+sMcaN6OPXDaHogp2bKfUVlL5ZNx7VJMfkx",
+  "Netscript2Mem.enableCodeErrors": true,
+  "Netscript2Mem.enableHighlight": true,
+  "Netscript2Mem.enableUpdater": true,
+  "Netscript2Mem.refreshRate": 500,
+  "Netscript2Mem.highlightVars": [
+    {
+      "name": "ns",
+      "color": "#aa00ff",
+      "type": [
+        "MemberExpression",
+        "CallExpression",
+        "Other"
+      ]
+    }
+  ],
+  "deno.codeLens.implementations": true,
+  "deno.codeLens.references": true,
+  "deno.codeLens.referencesAllFunctions": true,
+  "deno.lint": true,
+  "deno.suggest.completeFunctionCalls": true,
+  "deno.unstable": true,
+  "search.exclude": {
+    "/scripts/**": true
+  }
 }
