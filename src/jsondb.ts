@@ -65,7 +65,7 @@ export class JsonDB<T = null> extends Initializable {
       this.dispatchEvent(new Event('initialized'));
     } else {
       const value = this.#ns.read(this.#filePath);
-      Object.entries<T>(value).forEach(([key, val]) => {
+      Object.entries<T>(JSON.parse(value)).forEach(([key, val]) => {
         this.#store.set(key, val);
       });
       this.dispatchEvent(new Event('initialized'));
@@ -81,9 +81,9 @@ export class JsonDB<T = null> extends Initializable {
     if (this.options?.syncOnWrite) await this.sync();
   }
 
-  // pick(key: string) {
-  //   return this.#store.get(key) as T;
-  // }
+  pick(key: string) {
+    return this.#store.get(key) as T;
+  }
 
   has(key: string) {
     return this.#store.delete(key);
@@ -118,7 +118,7 @@ export class JsonDB<T = null> extends Initializable {
     return Array.from(this.#store.values());
   }
 
-  JSON<T = any>(storage?: Map<string, T>): { [k: string]: T } {
+  JSON(storage?: Map<string, T>): { [k: string]: T } {
     if (storage) {
       try {
         JSON.parse(JSON.stringify(storage));
@@ -140,7 +140,8 @@ let $ns: NS;
 function bootstrap(ns: NS) {
   $ns = ns;
   $ns.disableLog('ALL');
-  ns.tail();
+  $ns.clearLog();
+  $ns.tail();
 }
 
 export async function main(ns: NS) {

@@ -13,7 +13,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "moduleResolution": "node",
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
       "/*": ["./src/*"]
     }
