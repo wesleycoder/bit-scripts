@@ -1,5 +1,5 @@
-import { type NS } from '../../types/bitburner';
 import { open } from 'lmdb';
+import { type NS } from '/types/bitburner';
 
 let $ns: NS;
 let $db: any;

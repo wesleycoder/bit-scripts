@@ -1,5 +1,5 @@
 import deepEqual from 'fast-deep-equal';
-import { type NS } from '../types/bitburner';
+import { type NS } from '/types/bitburner';
 
 export type DBOptions = {
   target?: string;

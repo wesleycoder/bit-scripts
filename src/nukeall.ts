@@ -1,8 +1,8 @@
-import { type NS } from '../types/bitburner';
-import { Server } from '../types/local';
-import DB, { type DBOptions } from './jsondb';
-import { executables } from './nuke';
-import { sequence } from './utils';
+import DB, { type DBOptions } from '/jsondb';
+import { executables } from '/nuke';
+import { type NS } from '/types/bitburner';
+import { type Server } from '/types/local';
+import { sequence } from '/utils';
 
 let $ns: NS;
 let $db: DB<Server>;

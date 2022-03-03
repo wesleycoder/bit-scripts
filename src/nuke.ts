@@ -1,5 +1,5 @@
-import { type NSFn } from '../types/local';
-import { type NS } from '../types/bitburner';
+import { type NS } from '/types/bitburner';
+import { type NSFn } from '/types/local';
 
 type Executable = {
   file: string;

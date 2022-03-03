@@ -1,4 +1,4 @@
-import { NS } from '../types/bitburner';
+import { NS } from '/types/bitburner';
 
 export async function main(ns: NS) {
   const doc = eval('document');
