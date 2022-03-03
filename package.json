@@ -1,0 +1,39 @@
+{
+  "name": "bit-scripts",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "parcel watch 'src/**/*.ts'",
+    "build": "parcel build 'src/**/*.ts'",
+    "check": "tsc --noEmit",
+    "postinstall": "patch-package"
+  },
+  "targets": {
+    "default": {
+      "context": "browser",
+      "distDir": "./scripts",
+      "outputFormat": "esmodule",
+      "isLibrary": true,
+      "optimize": true,
+      "includeNodeModules": true,
+      "sourceMap": false
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wesleycoder/bit-scripts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wesleycoder/bit-scripts/issues"
+  },
+  "homepage": "https://github.com/wesleycoder/bit-scripts#readme",
+  "description": "",
+  "dependencies": {
+    "fast-deep-equal": "^3.1.3"
+  },
+  "devDependencies": {
+    "parcel": "^2.3.2",
+    "typescript": "^4.6.2"
+  }
+}

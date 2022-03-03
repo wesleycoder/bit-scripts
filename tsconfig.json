@@ -6,12 +6,13 @@
     "experimentalDecorators": true,
     "inlineSourceMap": true,
     "isolatedModules": true,
-    "jsx": "react",
-    "lib": ["esnext", "dom"],
-    "module": "esnext",
+    "jsxImportSource": "preact",
+    "lib": ["ESNext", "dom"],
     "strict": true,
-    "target": "esnext",
-    "useDefineForClassFields": true
+    "module": "ESNext",
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "moduleResolution": "node"
   },
-  "include": ["src/**/*.ts", "types/**/*.d.ts"]
+  "include": ["./src/**/*.ts", "./types/**/*.d.ts"]
 }
