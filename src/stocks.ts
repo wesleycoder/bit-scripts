@@ -25,7 +25,7 @@ async function bootstrap(ns: NS) {
   const flags = $ns.flags(flagConfig);
 
   $db = new DB($ns, 'stocks.db.txt', flags);
-  await $db.init();
+  await $db.ready;
 }
 
 class Position {
@@ -114,11 +114,14 @@ export async function main(ns: NS) {
       }
     );
 
+    const MIN_MONEY = 1_000_000;
+
     const bestStock = positions
       .filter((s) => s.long.shares < s.max)
       .filter((s) => s.forecast >= 10)[0];
+
     if (bestStock) {
-      const moneyAvail = Math.floor($ns.getPlayer().money - 501_000_000);
+      const moneyAvail = Math.floor($ns.getPlayer().money - MIN_MONEY * 1.2);
       const sharesToBuy = Math.min(
         Math.floor(moneyAvail / Math.ceil(bestStock.long.cost)),
         bestStock.max - bestStock.long.shares

@@ -1,3 +1,4 @@
+import deepEqual from 'fast-deep-equal';
 import { type NS } from '../types/bitburner';
 
 export type DBOptions = {
@@ -14,20 +15,32 @@ const defaultOptions: DBOptions = {
   resetOnInit: false,
 };
 
-export class JsonDB extends EventTarget {
-  #ns: NS;
-
-  #initilized = new Promise((resolve, reject) => {
-    this.addEventListener('JsonDb#initialized', resolve);
-    this.addEventListener('JsonDb#failed', reject);
+export class Initializable extends EventTarget {
+  #initialized = new Promise((resolve, reject) => {
+    this.addEventListener('initialized', resolve);
+    this.addEventListener('failed', reject);
   });
 
-  #storage: { [s: string]: any } = {};
+  get ready() {
+    return this.#initialized;
+  }
+}
+
+export class JsonDB<T = null> extends Initializable {
+  #ns: NS;
+
+  #initialized = new Promise((resolve, reject) => {
+    this.addEventListener('initialized', resolve);
+    this.addEventListener('failed', reject);
+  });
+
+  // deno-lint-ignore no-explicit-any
+  #store: Map<string, T> = new Map();
   #filePath: string;
 
   options: DBOptions = {};
 
-  constructor(ns: NS, filePath: string, options: DBOptions = {}) {
+  constructor(ns: NS, filePath: string = 'db.txt', options: DBOptions = {}) {
     super();
     // Mandatory arguments check
     if (!ns) throw new Error('No NS instance provided.');
@@ -43,85 +56,105 @@ export class JsonDB extends EventTarget {
 
     // Create file if it doesn't exist
     if (!this.#ns.fileExists(this.#filePath)) {
-      this.#ns.toast(`Creating file "${this.#filePath}"`);
       this.#ns
         .write(this.#filePath, '{}', 'w')
-        .then(() => this.dispatchEvent(new Event('JsonDb#initialized')))
-        .catch(() => this.dispatchEvent(new Event('JsonDb#failed')));
+        .then(() => this.dispatchEvent(new Event('initialized')))
+        .catch(() => this.dispatchEvent(new Event('failed')));
     } else if (this.options.resetOnInit) {
-      this.#ns.toast(`Resetting db "${this.#filePath}"`);
       this.sync();
+      this.dispatchEvent(new Event('initialized'));
     } else {
       const value = this.#ns.read(this.#filePath);
-      this.#storage = JSON.parse(value);
+      Object.entries<T>(value).forEach(([key, val]) => {
+        this.#store.set(key, val);
+      });
+      this.dispatchEvent(new Event('initialized'));
     }
-    this.dispatchEvent(new Event('JsonDb#initialized'));
   }
 
   init() {
-    return this.#initilized;
+    return this.#initialized;
   }
 
-  async set(key: string, value: any) {
-    this.#storage[key] = value;
+  async set(key: string, value: T) {
+    this.#store.set(key, value);
     if (this.options?.syncOnWrite) await this.sync();
   }
 
-  get(key: string) {
-    return this.#storage.hasOwnProperty(key) ? this.#storage[key] : undefined;
-  }
+  // pick(key: string) {
+  //   return this.#store.get(key) as T;
+  // }
 
   has(key: string) {
-    return this.#storage.hasOwnProperty(key);
+    return this.#store.delete(key);
   }
 
   async delete(key: string) {
-    const retVal = this.#storage.hasOwnProperty(key)
-      ? delete this.#storage[key]
-      : undefined;
+    if (this.#store.has(key)) this.#store.delete(key);
     if (this.options && this.options.syncOnWrite) await this.sync();
-    return retVal;
   }
 
   async deleteAll() {
-    await Promise.all(Object.keys(this.#storage).map(this.delete));
-    return this.JSON();
+    for (const [key] of this.#store) {
+      this.#store.delete(key);
+    }
+    await this.sync();
+    return this.#store;
   }
 
   async sync() {
-    try {
-      // this.#ns.tprint(this.#storage);
-      await this.#ns.write(
-        this.#filePath,
-        JSON.stringify(this.#storage, null, this.options.jsonSpaces),
-        'w'
-      );
-    } catch (err) {
-      throw new Error(
-        `Error while writing to path "${this.#filePath}": ${JSON.stringify(
-          err
-        )}`
-      );
-    }
+    await this.#ns.write(
+      this.#filePath,
+      JSON.stringify(this.#store, null, this.options.jsonSpaces),
+      'w'
+    );
   }
 
-  JSON<T = any>(storage = null): { [s: string]: T } {
+  get store() {
+    return this.#store;
+  }
+
+  getAll() {
+    return Array.from(this.#store.values());
+  }
+
+  JSON<T = any>(storage?: Map<string, T>): { [k: string]: T } {
     if (storage) {
       try {
         JSON.parse(JSON.stringify(storage));
-        this.#storage = storage;
       } catch {
-        throw new Error('Given storage is not valid JSON.');
+        throw new Error('Storage is not valid JSON.');
       }
     }
-    return JSON.parse(JSON.stringify(this.#storage));
+    return Array.from(this.#store.entries()).reduce(
+      (all, [k, v]) => ({ ...all, [k]: v }),
+      {}
+    );
   }
 }
 
 export default JsonDB;
 
+let $ns: NS;
+
+function bootstrap(ns: NS) {
+  $ns = ns;
+  $ns.disableLog('ALL');
+  ns.tail();
+}
+
 export async function main(ns: NS) {
-  const file = <string>ns.args[0] || './db.txt';
-  const db = new JsonDB(ns, file);
-  await db.init();
+  await bootstrap(ns);
+  const file = <string>$ns.args[0] || 'db.txt';
+  const db = new JsonDB($ns, file);
+
+  await db.ready;
+  const data = db.JSON();
+  assert(deepEqual(data, {}), 'database initialized empty');
+}
+
+function assert(outcome: boolean, description: string) {
+  const result = outcome ? 'INFO pass' : 'ERROR fail';
+  $ns.print(`${result}: ${description}`);
+  return outcome;
 }

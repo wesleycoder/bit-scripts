@@ -1,12 +1,12 @@
-import { Server } from '../types/bit-types';
 import { NS } from '../types/bitburner';
-import DB, { type DBOptions } from './jsondb.js';
-import { updateServerDetails } from './nukeall.js';
-import { sequence } from './utils.js';
+import { Server } from '../types/local';
+import DB, { type DBOptions } from './jsondb';
+import { updateServerDetails } from './nukeall';
+import { sequence } from './utils';
 
 let $ns: NS;
-let $db: DB;
-let $hackRam: number = 0;
+let $db: DB<Server>;
+let $hackRam = 0;
 
 const defaultOptions = {
   target: 'n00dles',
@@ -21,20 +21,16 @@ const flagConfig: [string, string | number | boolean | string[]][] = [
 async function bootstrap(ns: NS) {
   $ns = ns;
   $ns.clearLog();
-  $ns.disableLog('disableLog');
-  $ns.disableLog('sleep');
-  $ns.disableLog('scan');
-  $ns.disableLog('getServer');
-  $ns.disableLog('exec');
+  $ns.disableLog('ALL');
   $ns.tail();
 
   $hackRam = $ns.getScriptRam('hack.js', 'home');
 
-  const flags = $ns.flags(flagConfig);
+  const flags: DBOptions = $ns.flags(flagConfig);
 
   $db = new DB($ns, 'servers.db.txt', flags);
-  await $db.init();
-  const oldServers = Object.values(await $db.JSON()).map((s) => s.hostname);
+  await $db.ready;
+  const oldServers = $db.getAll().map((s) => s.hostname);
   await sequence(oldServers, updateServerDetails, { ns: $ns, db: $db });
 }
 
@@ -47,16 +43,16 @@ export const main = async (ns: NS) => {
   };
 
   while (true) {
-    const allServers = await $db.JSON();
-    const serversToHack = Object.values(allServers)
+    const serversToHack = $db
+      .getAll()
       .filter(canHack)
       .filter(({ hostname }) => $ns.fileExists('hack.js', hostname));
 
     const hackableServers = serversToHack
-      .map((s) => {
+      .map<[Server, { threads: number }]>((s) => {
         const isHome = s.hostname === 'home';
         const avail = isHome
-          ? s.ramAvail - Math.min(s.maxRam / 10, 12)
+          ? s.ramAvail - Math.min(s.maxRam / 4, 12)
           : s.ramAvail;
 
         const t = Math.floor(avail / $hackRam);
@@ -90,7 +86,7 @@ export const main = async (ns: NS) => {
           }
 
           await updateServerDetails(server.hostname, { ns: $ns, db: $db });
-          return [started, threads, await $db.get(server.hostname)];
+          return [started, threads, $db.pick(server.hostname)];
         }
       );
 

@@ -1,30 +1,22 @@
-import { Server } from '../types/bit-types';
 import { type NS } from '../types/bitburner';
+import { Server } from '../types/local';
 import DB, { type DBOptions } from './jsondb';
+import { executables } from './nuke';
 import { sequence } from './utils';
 
 let $ns: NS;
-let $db: DB;
+let $db: DB<Server>;
 let $nukeRam = 0;
+let $nukeAllRam = 0;
 
 type ScriptOptions = {
   parent: string;
 };
 
-const executables: {
-  file: string;
-  cmdName: 'brutessh' | 'ftpcrack' | 'relaysmtp' | 'httpworm' | 'sqlinject';
-}[] = [
-  { file: 'BruteSSH.exe', cmdName: 'brutessh' },
-  { file: 'FTPCrack.exe', cmdName: 'ftpcrack' },
-  { file: 'relaySMTP.exe', cmdName: 'relaysmtp' },
-  { file: 'HTTPWorm.exe', cmdName: 'httpworm' },
-  { file: 'SQLInject.exe', cmdName: 'sqlinject' },
-];
-
 const blacklist = ['home'];
 
 const scriptFilenames = [
+  'nuke.js',
   'nukeall.js',
   'jsondb.js',
   'utils.js',
@@ -39,38 +31,27 @@ const flagConfig: [string, string | number | boolean | string[]][] = [
 
 async function bootstrap(ns: NS) {
   $ns = ns;
-  $ns.disableLog('disableLog');
-  $ns.disableLog('sleep');
-  $ns.disableLog('scan');
-  $ns.disableLog('brutessh');
-  $ns.disableLog('ftpcrack');
-  $ns.disableLog('relaysmtp');
-  $ns.disableLog('httpworm');
-  $ns.disableLog('sqlinject');
-  $ns.disableLog('getScriptRam');
-  $ns.disableLog('scp');
-  $ns.disableLog('nuke');
-  $ns.disableLog('exec');
+  $ns.disableLog('ALL');
+  $ns.clearLog();
 
-  $nukeRam = $ns.getScriptRam('nukeall.js', 'home');
+  $nukeRam = $ns.getScriptRam('nuke.js', 'home');
+  $nukeAllRam = $ns.getScriptRam('nukeall.js', 'home');
 
   const flags: DBOptions = $ns.flags(flagConfig);
 
   $db = new DB($ns, 'servers.db.txt', flags);
-  await $db.init();
+  await $db.ready;
 }
 
-export async function main(ns: any) {
+export async function main(ns: NS) {
+  ns.tail();
   await bootstrap(ns);
   const flags: ScriptOptions & DBOptions = $ns.flags(flagConfig);
 
-  const { hostname: currentServer, hasAdminRights } = await $ns.getServer();
+  const { hostname: currentServer } = await $ns.getServer();
+  await updateServerDetails(currentServer);
 
-  if (!hasAdminRights) {
-    await tryNuke(currentServer);
-  }
-
-  await mapServers(currentServer);
+  await tryNuke(currentServer);
 
   const peers = await $ns.scan(currentServer);
   const targets = peers.filter(
@@ -78,25 +59,29 @@ export async function main(ns: any) {
   );
 
   await sequence(targets, mapServers, currentServer);
-  const allServers = Object.values(await $db.JSON<Server>());
   await sequence(
-    allServers.map((s) => s.hostname),
+    $db.getAll().map((s) => s.hostname),
     (t) => $ns.scp(scriptFilenames, 'home', t),
     currentServer
   );
 
-  const db = await $db.JSON();
+  await $db.sync();
+  const peersToNuke = targets.map((t) => $db.JSON()[t] as Server);
 
-  const peersToNuke = targets.map((t) => db[t]);
+  peersToNuke.forEach((p) => $ns.exec('nuke.js', currentServer, 1, p.hostname));
 
   $ns.print(`Nuking ${peersToNuke.length} servers:`);
   peersToNuke.map(({ hostname }) => $ns.print(`💻 ${hostname}`));
+
   $ns.print('_________________________________________');
 
   await sequence(peersToNuke, async ({ hostname, ramAvail }) => {
+    $ns.print(
+      `${hostname} has ${ramAvail} available RAM and ${$nukeAllRam} required`
+    );
     const updated = await tryNuke(hostname);
 
-    if (updated.hasAdminRights && ramAvail >= $nukeRam) {
+    if (updated.hasAdminRights && ramAvail >= $nukeAllRam) {
       const started = await $ns.exec(
         'nukeall.js',
         hostname,
@@ -105,44 +90,32 @@ export async function main(ns: any) {
         currentServer
       );
       if (!started) {
-        $ns.print(`Failed to start nukeall on ${hostname}: ${started}`);
+        $ns.print(`ERROR Failed to start nukeall on ${hostname}: ${started}`);
       }
     } else {
-      const manualPeers = await $ns.scan(hostname).filter((p) => {
-        const { hasAdminRights } = db[p];
-        return !hasAdminRights && ![...blacklist, currentServer].includes(p);
-      });
+      const manualPeers = await $ns
+        .scan(hostname)
+        .map((p) => $db.JSON()[p] as Server)
+        .filter(({ hostname: p, hasAdminRights }) => {
+          return !hasAdminRights && ![...blacklist, currentServer].includes(p);
+        });
       if (manualPeers.length) {
         $ns.tail();
         $ns.print(
-          `${hostname} ${
+          `WARNING ${hostname} ${
             updated.hasAdminRights ? 'has' : 'does not have'
           } admin rights and ${
-            ramAvail >= $nukeRam ? 'has' : 'does not have'
+            ramAvail >= $nukeAllRam ? 'has' : 'does not have'
           } enough ram to nuke.`
         );
-        const additionalCmd = ['run NUKE.exe;', 'run nukeall.js;', 'backdoor;'];
-        $ns.print(
-          manualPeers
-            .map(
-              (p) =>
-                `\n\n👉🏽 Manually connect to 💻 ${p} and run:\n` +
-                executables
-                  .filter(({ file }) => $ns.fileExists(file, 'home'))
-                  .map(({ file }) => `run ${file};`)
-                  .join('\n') +
-                '\n' +
-                additionalCmd.join('\n')
-            )
-            .join('\n\n')
-        );
+        $ns.print(`INFO 👉🏽 Manually hack 💻 [${manualPeers.join(', ')}]`);
       }
     }
   });
 }
 
 async function tryNuke(hostname: string) {
-  const server = await $db.get(hostname);
+  const server = $db.JSON()[hostname];
   const commands = executables
     .filter(({ file }) => $ns.fileExists(file, 'home'))
     .map(({ cmdName }) => $ns[cmdName]);
@@ -162,7 +135,7 @@ async function tryNuke(hostname: string) {
     if (!hasAdminRights) {
       $ns.tail();
       $ns.print(
-        `${hostname} has ${openPortCount} open ports and don't have admin rights.`
+        `WARNING ${hostname} has ${openPortCount} open ports and don't have admin rights.`
       );
     }
   } catch (error) {
@@ -189,10 +162,10 @@ export async function updateServerDetails(
   hostname: string,
   { parent = '', path = [], ns = $ns, db = $db } = {}
 ): Promise<Server> {
-  const oldData = (await db.get(hostname)) ?? { parent, path };
+  const oldData = db.JSON()[hostname] ?? { parent, path };
   const peers = await ns.scan(hostname);
   const details = await ns.getServer(hostname);
-  const server = {
+  const server: Server = {
     ...oldData,
     ...details,
     ramAvail: Number.parseFloat((details.maxRam - details.ramUsed).toFixed(2)),
