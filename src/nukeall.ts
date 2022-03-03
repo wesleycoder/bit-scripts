@@ -4,14 +4,30 @@ import { type NS } from '/types/bitburner';
 import { type Server } from '/types/local';
 import { sequence } from '/utils';
 
+type Logger = {
+  log: (...args: any[]) => void;
+  error: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  info: (...args: any[]) => void;
+};
+
 let $ns: NS;
 let $db: DB<Server>;
+let $logger: Logger;
+
 let $nukeRam = 0;
 let $nukeAllRam = 0;
 
 type ScriptOptions = {
   parent: string;
 };
+
+const getLogger = (ns: NS) => ({
+  log: ns.print,
+  error: (...args: any[]) => ns.print('ERROR ', ...args),
+  warn: (...args: any[]) => ns.print('WARN ', ...args),
+  info: (...args: any[]) => ns.print('INFO ', ...args),
+});
 
 const blacklist = ['home'];
 
@@ -31,8 +47,14 @@ const flagConfig: [string, string | number | boolean | string[]][] = [
 
 async function bootstrap(ns: NS) {
   $ns = ns;
+  $logger = getLogger($ns);
   $ns.disableLog('ALL');
   $ns.clearLog();
+  const formatter = Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'medium',
+  });
+  $logger.info(`⏱ ${formatter.format(new Date())}`);
 
   $nukeRam = $ns.getScriptRam('nuke.js', 'home');
   $nukeAllRam = $ns.getScriptRam('nukeall.js', 'home');
@@ -66,22 +88,22 @@ export async function main(ns: NS) {
   );
 
   await $db.sync();
-  const peersToNuke = targets.map((t) => $db.JSON()[t] as Server);
+  const peersToNuke = targets.map((t) => $db.pick(t));
 
   peersToNuke.forEach((p) => $ns.exec('nuke.js', currentServer, 1, p.hostname));
 
-  $ns.print(`Nuking ${peersToNuke.length} servers:`);
-  peersToNuke.map(({ hostname }) => $ns.print(`💻 ${hostname}`));
+  $logger.info(`# Nuking ${peersToNuke.length} servers:`);
+  peersToNuke.map(({ hostname }) => $logger.log(`💻 ${hostname}`));
 
-  $ns.print('_________________________________________');
+  $logger.log('_________________________________________');
 
   await sequence(peersToNuke, async ({ hostname, ramAvail }) => {
-    $ns.print(
+    const updated = await tryNuke(hostname);
+    $logger.warn(
       `${hostname} has ${ramAvail} available RAM and ${$nukeAllRam} required`
     );
-    const updated = await tryNuke(hostname);
 
-    if (updated.hasAdminRights && ramAvail >= $nukeAllRam) {
+    if (updated.hasAdminRights && updated.ramAvail >= $nukeAllRam) {
       const started = await $ns.exec(
         'nukeall.js',
         hostname,
@@ -90,32 +112,32 @@ export async function main(ns: NS) {
         currentServer
       );
       if (!started) {
-        $ns.print(`ERROR Failed to start nukeall on ${hostname}: ${started}`);
+        $logger.error(`Failed to start nukeall on ${hostname}: ${started}`);
       }
     } else {
       const manualPeers = await $ns
         .scan(hostname)
-        .map((p) => $db.JSON()[p] as Server)
+        .map((p) => $db.pick(p))
         .filter(({ hostname: p, hasAdminRights }) => {
           return !hasAdminRights && ![...blacklist, currentServer].includes(p);
         });
       if (manualPeers.length) {
         $ns.tail();
-        $ns.print(
-          `WARNING ${hostname} ${
+        $logger.warn(
+          `${hostname} ${
             updated.hasAdminRights ? 'has' : 'does not have'
           } admin rights and ${
             ramAvail >= $nukeAllRam ? 'has' : 'does not have'
           } enough ram to nuke.`
         );
-        $ns.print(`INFO 👉🏽 Manually hack 💻 [${manualPeers.join(', ')}]`);
+        $logger.info(`👉🏽 Manually hack 💻 [${manualPeers.join(', ')}]`);
       }
     }
   });
 }
 
 async function tryNuke(hostname: string) {
-  const server = $db.JSON()[hostname];
+  const server = $db.pick(hostname);
   const commands = executables
     .filter(({ file }) => $ns.fileExists(file, 'home'))
     .map(({ cmdName }) => $ns[cmdName]);
@@ -134,13 +156,16 @@ async function tryNuke(hostname: string) {
 
     if (!hasAdminRights) {
       $ns.tail();
-      $ns.print(
-        `WARNING ${hostname} has ${openPortCount} open ports and don't have admin rights.`
+      $logger.warn(
+        `${hostname} has ${openPortCount} open ports and don't have admin rights.`
       );
     }
   } catch (error) {
     $ns.tail();
-    $ns.print(`Failed to nuke ${hostname}: ${JSON.stringify(server)}: `, error);
+    $logger.error(
+      `Failed to nuke ${hostname}: ${JSON.stringify(server)}: `,
+      error
+    );
   }
 
   const updated = await updateServerDetails(server.hostname);
@@ -162,7 +187,7 @@ export async function updateServerDetails(
   hostname: string,
   { parent = '', path = [], ns = $ns, db = $db } = {}
 ): Promise<Server> {
-  const oldData = db.JSON()[hostname] ?? { parent, path };
+  const oldData = db.pick(hostname) ?? { parent, path };
   const peers = await ns.scan(hostname);
   const details = await ns.getServer(hostname);
   const server: Server = {
