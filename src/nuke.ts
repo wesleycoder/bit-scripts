@@ -1,28 +1,48 @@
-import { type NS } from '/types/bitburner';
-import { type NSFn } from '/types/local';
+import { type NS } from '~/types/bitburner';
 
-type Executable = {
-  file: string;
-  cmdName: NSFn;
-};
-
-export const executables: Executable[] = [
-  { file: 'BruteSSH.exe', cmdName: 'brutessh' },
-  { file: 'FTPCrack.exe', cmdName: 'ftpcrack' },
-  { file: 'relaySMTP.exe', cmdName: 'relaysmtp' },
-  { file: 'HTTPWorm.exe', cmdName: 'httpworm' },
-  { file: 'SQLInject.exe', cmdName: 'sqlinject' },
+export const executables = [
+  'BruteSSH.exe',
+  'FTPCrack.exe',
+  'relaySMTP.exe',
+  'HTTPWorm.exe',
+  'SQLInject.exe',
 ];
 
+export const getExecutable: (
+  ns: NS,
+  file: string
+) => ((host: string) => void) | undefined = (ns, file) =>
+  ({
+    'BruteSSH.exe': ns.brutessh,
+    'FTPCrack.exe': ns.ftpcrack,
+    'relaySMTP.exe': ns.relaysmtp,
+    'HTTPWorm.exe': ns.httpworm,
+    'SQLInject.exe': ns.sqlinject,
+  }[file]);
+
 export async function main(ns: NS) {
-  let target = <string>ns.args[0];
+  if (typeof ns.args[0] !== 'string') {
+    throw new Error('Invalid target');
+  }
+
+  let target = ns.args[0];
 
   if (!target) {
     target = (await ns.getServer()).hostname;
   }
 
-  await executables
-    .filter(({ file }) => ns.fileExists(file, 'home'))
-    .map(({ cmdName }: Executable) => cmdName)
-    .forEach((cmd) => ns[cmd](target));
+  try {
+    ns.brutessh(target);
+    ns.ftpcrack(target);
+    ns.relaysmtp(target);
+    ns.httpworm(target);
+    ns.sqlinject(target);
+  } catch (e) {
+    // ns.tprint(e as Error);
+  }
+
+  executables
+    .filter((file) => ns.fileExists(file, 'home'))
+    .map((cmd) => getExecutable(ns, cmd))
+    .forEach((cmd) => cmd?.(target));
 }

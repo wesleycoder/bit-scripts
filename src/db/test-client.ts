@@ -1,11 +1,11 @@
-import { type NS } from '/types/bitburner';
-
-export class DBClient {
-  #port = 1;
-}
+import { type NS } from '~/types/bitburner';
 
 export async function main(ns: NS) {
   ns.tail();
-  ns.print('Client running!');
-  await ns.writePort(1, `writing`);
+
+  const isSuccess = ns.tryWritePort(1, `writing`);
+
+  if (!isSuccess) {
+    ns.print('ERROR Failed to write to port');
+  }
 }

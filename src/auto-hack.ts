@@ -1,8 +1,8 @@
-import DB, { type DBOptions } from '/jsondb';
-import { updateServerDetails } from '/nukeall';
-import { NS } from '/types/bitburner';
-import { Server } from '/types/local';
-import { sequence } from '/utils';
+import DB, { type DBOptions } from '~/jsondb';
+import { updateServerDetails } from '~/nukeall';
+import { NS } from '~/types/bitburner';
+import { Server } from '~/types/local';
+import { sequence } from '~/utils';
 
 let $ns: NS;
 let $db: DB<Server>;
@@ -65,6 +65,9 @@ export const main = async (ns: NS) => {
         ];
       })
       .filter(([, { threads }]) => threads > 0);
+
+    $ns.tprint(`Found ${hackableServers.length} servers to run hack.js`);
+    $ns.tprint(hackableServers.map(([s]) => s.hostname).join(', ') || 'none');
 
     if (hackableServers.length) {
       $ns.print(`${hackableServers.length} servers to run hack.js`);

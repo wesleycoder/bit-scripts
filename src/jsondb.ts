@@ -1,5 +1,5 @@
 import deepEqual from 'fast-deep-equal';
-import { type NS } from '/types/bitburner';
+import { type NS } from '~/types/bitburner';
 
 export type DBOptions = {
   target?: string;
@@ -56,10 +56,7 @@ export class JsonDB<T = null> extends Initializable {
 
     // Create file if it doesn't exist
     if (!this.#ns.fileExists(this.#filePath)) {
-      this.#ns
-        .write(this.#filePath, '{}', 'w')
-        .then(() => this.dispatchEvent(new Event('initialized')))
-        .catch(() => this.dispatchEvent(new Event('failed')));
+      this.#ns.write(this.#filePath, '{}', 'w');
     } else if (this.options.resetOnInit) {
       this.sync();
       this.dispatchEvent(new Event('initialized'));

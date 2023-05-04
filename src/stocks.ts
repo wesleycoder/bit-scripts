@@ -1,6 +1,6 @@
-import DB from '/jsondb';
-import { type NS, type TIX } from '/types/bitburner';
-import { sequence } from '/utils';
+import DB from '~/jsondb';
+import { type NS, type TIX } from '~/types/bitburner';
+import { sequence } from '~/utils';
 
 type ScriptOptions = {
   sleepTime: number;
@@ -110,7 +110,7 @@ export async function main(ns: NS) {
       myStocks.filter((s) => s.forecast <= 3),
       async (stock: Position) => {
         $ns.toast(`selling: ${stock.symbol} ➡️ ${stock.long.shares}`, 'error');
-        await $stock.sell(stock.symbol, stock.long.shares);
+        await $stock.sellStock(stock.symbol, stock.long.shares);
       }
     );
 
@@ -129,7 +129,7 @@ export async function main(ns: NS) {
       const totalCost = sharesToBuy * bestStock.long.cost;
 
       if (totalCost >= 1_000_000 && (cycles === 0 || cycles % 5 === 0)) {
-        const bought = await $stock.buy(bestStock.symbol, sharesToBuy);
+        const bought = $stock.buyStock(bestStock.symbol, sharesToBuy);
         const cost = $ns.nFormat(totalCost, '0,0a');
         const qty = $ns.nFormat(sharesToBuy, '0,0a');
         $ns.toast(

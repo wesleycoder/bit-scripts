@@ -1,4 +1,4 @@
-import { type NS } from '/types/bitburner';
+import { type NS } from '~/types/bitburner';
 
 let $ns: NS;
 
@@ -19,15 +19,20 @@ export const main = async (ns: NS) => {
   if (!flags.target) $ns.exit();
 
   const moneyFmt = '$0,0[.]000a';
-  const securityThresh = $ns.getServerMinSecurityLevel(flags.target) + 5;
-  const moneyThresh = $ns.getServerMaxMoney(flags.target) * 0.8;
+  const securityThresh =
+    $ns.getServerMinSecurityLevel(flags.target as string) + 5;
+  const moneyThresh = $ns.getServerMaxMoney(flags.target as string) * 0.8;
   let totalEarned = 0;
   let weakenCount = 0;
   let growCount = 0;
 
   while (true) {
-    const securityLvl = Math.round($ns.getServerSecurityLevel(flags.target));
-    const moneyAvail = Math.round($ns.getServerMoneyAvailable(flags.target));
+    const securityLvl = Math.round(
+      $ns.getServerSecurityLevel(flags.target as string)
+    );
+    const moneyAvail = Math.round(
+      $ns.getServerMoneyAvailable(flags.target as string)
+    );
 
     $ns.clearLog();
     $ns.print(`💻 Target: ${flags.target}`);
@@ -39,15 +44,21 @@ export const main = async (ns: NS) => {
 
     if (securityLvl >= securityThresh) {
       $ns.print(`🛡 Weakening: 🎚${securityLvl}`);
-      await $ns.weaken(flags.target, { threads: flags.threads });
+      await $ns.weaken(flags.target as string, {
+        threads: flags.threads as number,
+      });
       weakenCount++;
     } else if (moneyAvail <= moneyThresh) {
       $ns.print(`📈 Growing: ${$ns.nFormat(moneyAvail, moneyFmt)}`);
-      await $ns.grow(flags.target, { threads: flags.threads });
+      await $ns.grow(flags.target as string, {
+        threads: flags.threads as number,
+      });
       growCount++;
     } else {
       $ns.print(`👨🏽‍💻 Hacking`);
-      const earned = await $ns.hack(flags.target, { threads: flags.threads });
+      const earned = await $ns.hack(flags.target as string, {
+        threads: flags.threads as number,
+      });
       totalEarned += earned;
       weakenCount = 0;
       growCount = 0;

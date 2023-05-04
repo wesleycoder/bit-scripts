@@ -5,7 +5,7 @@
   },
   "bitburner.fileWatcher.enable": true,
   "bitburner.scriptRoot": "./scripts",
-  "bitburner.authToken": "9dxqQzZe15qMsz+REq46X5UFaR3MB+sMcaN6OPXDaHogp2bKfUVlL5ZNx7VJMfkx",
+  "bitburner.authToken": "hQXXGiLtU/B+4QAfZAkNE+Nyx62UJ3U+WlJT0YNGqtStTFLUKVwfKo4Nd3b9gdDx",
   "Netscript2Mem.enableCodeErrors": true,
   "Netscript2Mem.enableHighlight": true,
   "Netscript2Mem.enableUpdater": true,
@@ -14,14 +14,10 @@
     {
       "name": "ns",
       "color": "#aa00ff",
-      "type": [
-        "MemberExpression",
-        "CallExpression",
-        "Other"
-      ]
+      "type": ["MemberExpression", "CallExpression", "Other"]
     }
   ],
   "search.exclude": {
     "/scripts/**": true
-  },
+  }
 }

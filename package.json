@@ -1,14 +1,14 @@
 {
+  "$schema": "https://raw.githubusercontent.com/lukaw3d/parcel-bundler-json-schemas/main/package_schema.json",
   "name": "bit-scripts",
   "version": "1.0.0",
   "scripts": {
-    "start": "parcel watch './src/**/*.ts'",
-    "build": "parcel build './src/**/*.ts'",
+    "start": "parcel watch './src/**/*[!.d].ts' './src/**/*[!.d].tsx'",
+    "build": "parcel build './src/**/*[!.d].ts' './src/**/*[!.d].tsx' --no-optimize --no-scope-hoist --no-content-hash --no-cache --no-source-maps --no-autoinstall",
     "check": "tsc --noEmit",
     "postinstall": "patch-package"
   },
   "@mischnic/parcel-resolver-root": {
-    "/": "./src",
     "~": "./src"
   },
   "targets": {
@@ -17,9 +17,9 @@
       "distDir": "./scripts",
       "outputFormat": "esmodule",
       "isLibrary": true,
-      "optimize": true,
       "includeNodeModules": true,
-      "sourceMap": false
+      "sourceMap": false,
+      "optimize": false
     }
   },
   "repository": {
@@ -34,11 +34,18 @@
   "homepage": "https://github.com/wesleycoder/bit-scripts#readme",
   "description": "",
   "dependencies": {
-    "@mischnic/parcel-resolver-root": "^0.4.1",
-    "fast-deep-equal": "^3.1.3"
+    "fast-deep-equal": "^3.1.3",
+    "react": "^18.2.0"
   },
   "devDependencies": {
-    "parcel": "^2.3.2",
+    "@mischnic/parcel-resolver-root": "^0.4.2",
+    "@parcel/config-default": "^2.8.3",
+    "@parcel/transformer-typescript-tsc": "^2.8.3",
+    "@types/react": "^18.2.2",
+    "parcel": "^2.8.3",
+    "patch-package": "^7.0.0",
+    "postcss": "^8.4.23",
+    "tailwind": "^4.0.0",
     "typescript": "^4.6.2"
   }
 }

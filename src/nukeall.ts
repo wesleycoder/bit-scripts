@@ -1,8 +1,8 @@
-import DB, { type DBOptions } from '/jsondb';
-import { executables } from '/nuke';
-import { type NS } from '/types/bitburner';
-import { type Server } from '/types/local';
-import { sequence } from '/utils';
+import DB, { type DBOptions } from '~/jsondb';
+import { executables, getExecutable } from '~/nuke';
+import { type NS } from '~/types/bitburner';
+import { type Server } from '~/types/local';
+import { sequence } from '~/utils';
 
 type Logger = {
   log: (...args: any[]) => void;
@@ -19,7 +19,7 @@ let $nukeRam = 0;
 let $nukeAllRam = 0;
 
 type ScriptOptions = {
-  parent: string;
+  parent?: string;
 };
 
 const getLogger = (ns: NS) => ({
@@ -99,9 +99,11 @@ export async function main(ns: NS) {
 
   await sequence(peersToNuke, async ({ hostname, ramAvail }) => {
     const updated = await tryNuke(hostname);
-    $logger.warn(
-      `${hostname} has ${ramAvail} available RAM and ${$nukeAllRam} required`
-    );
+    if (ramAvail < $nukeAllRam) {
+      $logger.warn(
+        `${hostname} has ${ramAvail} available RAM and ${$nukeAllRam} required`
+      );
+    }
 
     if (updated.hasAdminRights && updated.ramAvail >= $nukeAllRam) {
       const started = await $ns.exec(
@@ -138,17 +140,22 @@ export async function main(ns: NS) {
 
 async function tryNuke(hostname: string) {
   const server = $db.pick(hostname);
-  const commands = executables
-    .filter(({ file }) => $ns.fileExists(file, 'home'))
-    .map(({ cmdName }) => $ns[cmdName]);
+
   try {
-    await sequence(commands, (cmd) => cmd(hostname));
+    executables
+      .filter((file) => $ns.fileExists(file, `home`))
+      .map((cmd) => getExecutable($ns, cmd))
+      .forEach((cmd) => cmd?.(hostname));
 
     const { hasAdminRights: alreadyNuked, openPortCount } = await $ns.getServer(
       hostname
     );
 
-    if (!alreadyNuked && openPortCount >= server.numOpenPortsRequired) {
+    if (
+      !alreadyNuked &&
+      openPortCount &&
+      openPortCount >= server.numOpenPortsRequired!
+    ) {
       $ns.nuke(hostname);
     }
 
