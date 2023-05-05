@@ -1,7 +1,5 @@
 import DB, { type DBOptions } from '~/jsondb';
 import { updateServerDetails } from '~/nukeall';
-import { NS } from '~/types/bitburner';
-import { Server } from '~/types/local';
 import { sequence } from '~/utils';
 
 let $ns: NS;

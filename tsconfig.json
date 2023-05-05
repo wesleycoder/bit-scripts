@@ -18,7 +18,12 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
-    }
+    },
+    "types": [
+      "./src/types/bitburner.d.ts",
+      "./src/types/global.d.ts",
+      "./node_modules/@types/react/index.d.ts"
+    ]
   },
   "include": ["./src/**/*.ts", "./src/**/*.tsx"]
 }

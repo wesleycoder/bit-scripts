@@ -1,9 +1,5 @@
-declare global {
-  var React: any;
-}
-
+import React from 'react';
 import JsonDB from '~/jsondb';
-import { type NS } from '~/types/bitburner';
 
 let db: JsonDB;
 

@@ -1,5 +1,3 @@
-import { NS } from '~/types/bitburner';
-
 export async function main(ns: NS) {
   const doc = eval('document');
   const terminalInput = doc.getElementById('terminal-input');

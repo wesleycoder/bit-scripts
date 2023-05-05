@@ -1,5 +1,3 @@
-import { type NS } from '~/types/bitburner';
-
 export async function main(ns: NS) {
   ns.tail();
 

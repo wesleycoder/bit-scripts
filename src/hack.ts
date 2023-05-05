@@ -1,5 +1,3 @@
-import { type NS } from '~/types/bitburner';
-
 let $ns: NS;
 
 const bootstrap = async (ns: NS) => {

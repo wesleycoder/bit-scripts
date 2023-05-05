@@ -1,5 +1,4 @@
 import DB from '~/jsondb';
-import { type NS, type TIX } from '~/types/bitburner';
 import { sequence } from '~/utils';
 
 type ScriptOptions = {

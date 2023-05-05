@@ -1,7 +1,5 @@
 import DB, { type DBOptions } from '~/jsondb';
 import { executables, getExecutable } from '~/nuke';
-import { type NS } from '~/types/bitburner';
-import { type Server } from '~/types/local';
 import { sequence } from '~/utils';
 
 type Logger = {

@@ -1,5 +1,3 @@
-import { type NS } from '~/types/bitburner';
-
 export const executables = [
   'BruteSSH.exe',
   'FTPCrack.exe',

@@ -3,8 +3,8 @@
   "name": "bit-scripts",
   "version": "1.0.0",
   "scripts": {
-    "start": "parcel watch './src/**/*[!.d].ts' './src/**/*[!.d].tsx'",
-    "build": "parcel build './src/**/*[!.d].ts' './src/**/*[!.d].tsx' --no-optimize --no-scope-hoist --no-content-hash --no-cache --no-source-maps --no-autoinstall",
+    "start": "parcel watch './src/**/*[!.d].{js,ts,tsx}'",
+    "build": "parcel build './src/**/*[!.d].[ts,tsx]' --no-optimize --no-scope-hoist --no-content-hash --no-cache --no-source-maps --no-autoinstall",
     "check": "tsc --noEmit",
     "postinstall": "patch-package"
   },
@@ -34,7 +34,9 @@
   "homepage": "https://github.com/wesleycoder/bit-scripts#readme",
   "description": "",
   "dependencies": {
-    "fast-deep-equal": "^3.1.3",
+    "fast-deep-equal": "^3.1.3"
+  },
+  "peerDependencies": {
     "react": "^18.2.0"
   },
   "devDependencies": {

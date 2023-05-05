@@ -6,4 +6,3 @@
 /saves/bitburnerSave_*.json
 **/*.vsix
 /scripts/
-!/scripts/devtools.js
